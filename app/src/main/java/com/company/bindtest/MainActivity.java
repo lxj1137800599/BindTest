@@ -8,6 +8,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.company.libapi.LCJViewBinder;
+import com.example.BindClick;
 import com.example.BindView;
 
 public class MainActivity extends Activity {
@@ -17,6 +18,11 @@ public class MainActivity extends Activity {
     TextView mTv;
     @BindView(R.id.test2)
     Button mButton2;
+
+    @BindClick(R.id.test2 )   //给 button1 设置一个点击事件
+    public void showToast(){
+        Toast.makeText(MainActivity.this, "test", Toast.LENGTH_SHORT).show();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

@@ -13,6 +13,8 @@ public class LCJViewBinder {
     private static final ActivityViewFinder activityFinder = new ActivityViewFinder();//默认声明一个Activity View查找器
     private static final Map<String, ViewBinder> binderMap = new LinkedHashMap<>();//管理保持管理者Map集合
 
+    private static final Map<String, ClickBinder> clickBinderMap = new LinkedHashMap<>();
+
     /**
      * Activity注解绑定 ActivityViewFinder
      *
@@ -20,6 +22,29 @@ public class LCJViewBinder {
      */
     public static void bind(Activity activity) {
         bind(activity, activity, activityFinder);
+        bindClick(activity, activity);
+    }
+
+    private static void bindClick(Object host, Object object) {
+        String className = host.getClass().getName();
+        try {
+            ClickBinder binder = clickBinderMap.get(className);
+            if (binder == null) {
+                Class<?> aClass = Class.forName(className + "$$ClickBinder");
+                binder = (ClickBinder) aClass.newInstance();
+
+                clickBinderMap.put(className, binder);
+            }
+            if (binder != null) {
+                binder.bindClick(host, object);
+            }
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
     }
 
 
@@ -59,6 +84,13 @@ public class LCJViewBinder {
      */
     public static void unBind(Object host) {
         String className = host.getClass().getName();
+
+        ClickBinder clickBinder = clickBinderMap.get(className);
+        if (clickBinder != null) {
+            clickBinder.unBindClick(host);
+        }
+        clickBinderMap.remove(className);
+
         ViewBinder binder = binderMap.get(className);
         if (binder != null) {
             binder.unBindView(host);
