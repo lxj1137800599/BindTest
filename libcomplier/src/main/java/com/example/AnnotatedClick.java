@@ -49,33 +49,41 @@ public class AnnotatedClick {
 
         for (BindClickField field : mFields) {
             ListenerClass listenerClass = field.getListenerClass();
-            ListenerMethod method = listenerClass.annotationType().getAnnotation(ListenerMethod.class);
+            ListenerMethod method = listenerClass.method()[0];
             String name = field.getFieldName().toString();
             //匿名内部类
+            //编译的时候会检查类。java库找不到Android类，会报错
+//            TypeSpec onCLick = TypeSpec.anonymousClassBuilder("")
+//                    .addSuperinterface(ParameterizedTypeName.get(Class.forName(listenerClass.type())))
+//                    .addMethod(MethodSpec.methodBuilder(method.name())
+//                            .addAnnotation(Override.class)
+//                            .addModifiers(Modifier.PUBLIC)
+//                            .addParameter(VIEW, "view")
+//                            .returns(void.class)
+//                            .addStatement("host.$L();", name)
+//                            .build())
+//                    .build();
+//            bindViewMethod.addStatement("host.findViewById($L).setOnClickListener($L)", field.getResId(), onCLick);
+
+            //可以这么写，但总感觉不标准
+//            bindViewMethod.addStatement("host.findViewById($L).setOnClickListener(new View.OnClickListener() { @Override public void onClick($T v) { host.$L(); }})",
+//                    field.getResId(), VIEW, name);
+
+            //已经简化过了，但是感觉和标准还差那么点
+//            bindViewMethod.addStatement("host.findViewById($L).$L(new $L() { @Override public void $L($T v) { host.$L(); }})",
+//                    field.getResId(), listenerClass.setter(), listenerClass.type(), method.name(), VIEW, name);
+
             TypeSpec onCLick = TypeSpec.anonymousClassBuilder("")
-                    .addSuperinterface(ParameterizedTypeName.get(Class.forName(listenerClass.type())))
+                    .superclass(ClassName.bestGuess(listenerClass.type()))
                     .addMethod(MethodSpec.methodBuilder(method.name())
                             .addAnnotation(Override.class)
                             .addModifiers(Modifier.PUBLIC)
                             .addParameter(VIEW, "view")
                             .returns(void.class)
-                            .addStatement("host.$L();", name)
+                            .addStatement("host.$L()", name)
                             .build())
                     .build();
-            bindViewMethod.addStatement("host.findViewById($L).setOnClickListener($L)", field.getResId(), onCLick);
-
-//            bindViewMethod.addStatement("host.findViewById($L).setOnClickListener(new View.OnClickListener() { public void onClick($T v) { host.$L(); }})",
-//                    field.getResId(), VIEW, name);
-
-//            TypeSpec onCLick = TypeSpec.anonymousClassBuilder("")
-//                    .addSuperinterface(ParameterizedTypeName.get(Student.class))
-//                    .addMethod(MethodSpec.methodBuilder("run")
-//                            .addAnnotation(Override.class)
-//                            .addModifiers(Modifier.PUBLIC)
-//                            .returns(void.class)
-//                            .addStatement("int a = 5")
-//                            .build()).build();
-//            bindViewMethod.addStatement("new Thread($L).start()", onCLick);
+            bindViewMethod.addStatement("host.findViewById($L).$L($L)", field.getResId(), listenerClass.setter(), onCLick);
         }
 
         MethodSpec.Builder unBindViewMethod = MethodSpec.methodBuilder("unBindClick")
